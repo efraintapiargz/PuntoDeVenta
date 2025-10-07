@@ -56,13 +56,11 @@ function MenuView({ products, cart, addToCart, onGoToCart }) {
               key={product.id}
               className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all overflow-hidden"
             >
-              {/* Image */}
-              <div className="relative h-48 bg-gradient-to-br from-gray-100 to-gray-200">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
+              {/* Emoji Icon */}
+              <div className="relative h-32 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+                <div className="text-6xl">
+                  {product.emoji || '🍽️'}
+                </div>
                 <div className="absolute top-2 right-2 bg-white px-3 py-1 rounded-full shadow-sm">
                   <span className="text-xs font-semibold text-gray-600">
                     {product.category}

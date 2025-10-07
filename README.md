@@ -73,7 +73,7 @@ Obtiene el catálogo completo de productos.
       "name": "Coca Cola",
       "price": 2.50,
       "category": "Bebidas",
-      "image": "url..."
+      "emoji": "🥤"
     }
   ]
 }

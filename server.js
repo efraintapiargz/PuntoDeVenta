@@ -1,12 +1,21 @@
 // ============================================
-// API REST - SISTEMA POS RESTAURANTE
+// API REST + WEBSOCKETS - SISTEMA POS RESTAURANTE
 // ============================================
 
 const express = require('express');
 const cors = require('cors');
+const { Server } = require('socket.io');
+const http = require('http');
+const { LOCAL_IP, PORT, SERVER_URL } = require('./config');
 
 const app = express();
-const PORT = 3000;
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*", // Permitir todas las conexiones para desarrollo
+    methods: ["GET", "POST", "PUT", "DELETE"]
+  }
+});
 
 // ============================================
 // MIDDLEWARES
@@ -22,26 +31,50 @@ app.use((req, res, next) => {
 });
 
 // ============================================
+// WEBSOCKETS - TIEMPO REAL
+// ============================================
+
+// Manejo de conexiones WebSocket
+io.on('connection', (socket) => {
+  console.log(`🔗 Cliente conectado: ${socket.id}`);
+  
+  // Enviar datos iniciales al conectarse
+  socket.emit('products', products);
+  socket.emit('orders', orders);
+  
+  // Escuchar desconexión
+  socket.on('disconnect', () => {
+    console.log(`❌ Cliente desconectado: ${socket.id}`);
+  });
+});
+
+// Función para emitir actualizaciones a todos los clientes
+function broadcastUpdate(event, data) {
+  io.emit(event, data);
+  console.log(`📡 Broadcast: ${event}`, data);
+}
+
+// ============================================
 // DATOS EN MEMORIA
 // ============================================
 
 // Catálogo de productos del restaurante
 let products = [
   // Bebidas
-  { id: 1, name: 'Coca Cola', price: 2.50, category: 'Bebidas', image: 'https://via.placeholder.com/150?text=Coca+Cola' },
-  { id: 2, name: 'Agua Mineral', price: 1.50, category: 'Bebidas', image: 'https://via.placeholder.com/150?text=Agua' },
-  { id: 3, name: 'Jugo de Naranja', price: 3.00, category: 'Bebidas', image: 'https://via.placeholder.com/150?text=Jugo' },
+  { id: 1, name: 'Coca Cola', price: 2.50, category: 'Bebidas', emoji: '🥤' },
+  { id: 2, name: 'Agua Mineral', price: 1.50, category: 'Bebidas', emoji: '💧' },
+  { id: 3, name: 'Jugo de Naranja', price: 3.00, category: 'Bebidas', emoji: '🧃' },
   
   // Comidas
-  { id: 4, name: 'Hamburguesa Clásica', price: 8.50, category: 'Comidas', image: 'https://via.placeholder.com/150?text=Hamburguesa' },
-  { id: 5, name: 'Pizza Margarita', price: 12.00, category: 'Comidas', image: 'https://via.placeholder.com/150?text=Pizza' },
-  { id: 6, name: 'Ensalada César', price: 7.00, category: 'Comidas', image: 'https://via.placeholder.com/150?text=Ensalada' },
-  { id: 7, name: 'Pasta Carbonara', price: 10.50, category: 'Comidas', image: 'https://via.placeholder.com/150?text=Pasta' },
+  { id: 4, name: 'Hamburguesa Clásica', price: 8.50, category: 'Comidas', emoji: '🍔' },
+  { id: 5, name: 'Pizza Margarita', price: 12.00, category: 'Comidas', emoji: '🍕' },
+  { id: 6, name: 'Ensalada César', price: 7.00, category: 'Comidas', emoji: '🥗' },
+  { id: 7, name: 'Pasta Carbonara', price: 10.50, category: 'Comidas', emoji: '🍝' },
   
   // Postres
-  { id: 8, name: 'Tiramisú', price: 5.50, category: 'Postres', image: 'https://via.placeholder.com/150?text=Tiramisu' },
-  { id: 9, name: 'Cheesecake', price: 6.00, category: 'Postres', image: 'https://via.placeholder.com/150?text=Cheesecake' },
-  { id: 10, name: 'Helado de Vainilla', price: 4.00, category: 'Postres', image: 'https://via.placeholder.com/150?text=Helado' }
+  { id: 8, name: 'Tiramisú', price: 5.50, category: 'Postres', emoji: '🍰' },
+  { id: 9, name: 'Cheesecake', price: 6.00, category: 'Postres', emoji: '🎂' },
+  { id: 10, name: 'Helado de Vainilla', price: 4.00, category: 'Postres', emoji: '🍨' }
 ];
 
 // Array de órdenes en memoria
@@ -121,6 +154,10 @@ app.post('/api/orders', (req, res) => {
     orders.push(newOrder);
 
     console.log(`✅ Orden #${newOrder.orderId} creada - Mesa ${tableNumber} - Total: $${total}`);
+
+    // Notificar a todos los clientes sobre la nueva orden
+    broadcastUpdate('newOrder', newOrder);
+    broadcastUpdate('orders', orders);
 
     res.status(201).json({
       success: true,
@@ -252,6 +289,15 @@ app.put('/api/orders/:id', (req, res) => {
 
     console.log(`🔄 Orden #${orderId} actualizada: ${previousStatus} → ${status}`);
 
+    // Notificar a todos los clientes sobre la actualización
+    broadcastUpdate('orderUpdated', {
+      orderId: orderId,
+      oldStatus: previousStatus,
+      newStatus: status,
+      order: orders[orderIndex]
+    });
+    broadcastUpdate('orders', orders);
+
     res.status(200).json({
       success: true,
       message: 'Orden actualizada exitosamente',
@@ -290,6 +336,13 @@ app.delete('/api/orders/:id', (req, res) => {
 
     console.log(`🗑️  Orden #${orderId} eliminada - Mesa ${deletedOrder.tableNumber}`);
 
+    // Notificar a todos los clientes sobre la eliminación
+    broadcastUpdate('orderDeleted', {
+      orderId: orderId,
+      order: deletedOrder
+    });
+    broadcastUpdate('orders', orders);
+
     res.status(200).json({
       success: true,
       message: `Orden #${orderId} eliminada exitosamente`,
@@ -311,8 +364,13 @@ app.delete('/api/orders/:id', (req, res) => {
 
 app.get('/', (req, res) => {
   res.json({
-    message: '🍔 API REST - Sistema POS Restaurante',
-    version: '1.0.0',
+    message: '🍔 API REST - Sistema POS Restaurante + WebSockets',
+    version: '2.0.0',
+    localIP: LOCAL_IP,
+    urls: {
+      local: `http://localhost:${PORT}`,
+      network: SERVER_URL
+    },
     endpoints: {
       products: 'GET /api/products',
       orders: {
@@ -323,7 +381,16 @@ app.get('/', (req, res) => {
         delete: 'DELETE /api/orders/:id'
       }
     },
-    documentation: 'Todos los endpoints retornan JSON'
+    websockets: {
+      events: ['newOrder', 'orderUpdated', 'orderDeleted', 'orders', 'products']
+    },
+    mobile: {
+      instructions: [
+        '1. Conecta tu dispositivo a la misma WiFi',
+        `2. Abre ${SERVER_URL} en tu navegador móvil`,
+        '3. ¡Funciona en tiempo real!'
+      ]
+    }
   });
 });
 
@@ -339,26 +406,41 @@ app.use((req, res) => {
 });
 
 // ============================================
-// INICIAR SERVIDOR
+// INICIAR SERVIDOR CON WEBSOCKETS
 // ============================================
 
-app.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log('');
   console.log('═══════════════════════════════════════════');
-  console.log('🍔 SERVIDOR POS RESTAURANTE INICIADO');
+  console.log('🍔 SERVIDOR POS RESTAURANTE + WEBSOCKETS');
   console.log('═══════════════════════════════════════════');
   console.log(`📡 Puerto: ${PORT}`);
-  console.log(`🌐 URL: http://localhost:${PORT}`);
+  console.log(`🌐 URL Local: http://localhost:${PORT}`);
+  console.log(`📱 URL Red: ${SERVER_URL}`);
+  console.log(`🔗 WebSockets: Habilitados para tiempo real`);
   console.log(`📦 Productos disponibles: ${products.length}`);
   console.log(`📋 Órdenes actuales: ${orders.length}`);
   console.log('═══════════════════════════════════════════');
   console.log('');
-  console.log('Endpoints disponibles:');
+  console.log('📱 ACCESO DESDE CELULAR:');
+  console.log(`   1. Conecta tu celular a la misma WiFi`);
+  console.log(`   2. Abre: ${SERVER_URL} en el navegador`);
+  console.log(`   3. ¡Listo! Tiempo real entre dispositivos`);
+  console.log('═══════════════════════════════════════════');
+  console.log('');
+  console.log('API Endpoints:');
   console.log('  GET    /api/products');
   console.log('  POST   /api/orders');
   console.log('  GET    /api/orders');
   console.log('  GET    /api/orders/:id');
   console.log('  PUT    /api/orders/:id');
   console.log('  DELETE /api/orders/:id');
+  console.log('');
+  console.log('WebSocket Events:');
+  console.log('  📡 newOrder - Nueva orden creada');
+  console.log('  📡 orderUpdated - Estado de orden actualizado');
+  console.log('  📡 orderDeleted - Orden eliminada');
+  console.log('  📡 orders - Lista completa de órdenes');
+  console.log('  📡 products - Lista de productos');
   console.log('');
 });
