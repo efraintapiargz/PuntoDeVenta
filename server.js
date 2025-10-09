@@ -61,20 +61,20 @@ function broadcastUpdate(event, data) {
 // Catálogo de productos del restaurante
 let products = [
   // Bebidas
-  { id: 1, name: 'Coca Cola', price: 2.50, category: 'Bebidas', emoji: '🥤' },
-  { id: 2, name: 'Agua Mineral', price: 1.50, category: 'Bebidas', emoji: '💧' },
-  { id: 3, name: 'Jugo de Naranja', price: 3.00, category: 'Bebidas', emoji: '🧃' },
+  { id: 1, name: 'Coca Cola', price: 19, category: 'Bebidas', emoji: '🥤' },
+  { id: 2, name: 'Agua Mineral', price: 16, category: 'Bebidas', emoji: '💧' },
+  { id: 3, name: 'Jugo de Naranja', price: 18, category: 'Bebidas', emoji: '🧃' },
   
   // Comidas
-  { id: 4, name: 'Hamburguesa Clásica', price: 8.50, category: 'Comidas', emoji: '🍔' },
-  { id: 5, name: 'Pizza Margarita', price: 12.00, category: 'Comidas', emoji: '🍕' },
-  { id: 6, name: 'Ensalada César', price: 7.00, category: 'Comidas', emoji: '🥗' },
-  { id: 7, name: 'Pasta Carbonara', price: 10.50, category: 'Comidas', emoji: '🍝' },
-  
+  { id: 4, name: 'Hamburguesa Clásica', price: 100, category: 'Comidas', emoji: '🍔' },
+  { id: 5, name: 'Pizza Margarita', price: 120, category: 'Comidas', emoji: '🍕' },
+  { id: 6, name: 'Ensalada César', price: 70, category: 'Comidas', emoji: '🥗' },
+  { id: 7, name: 'Pasta Carbonara', price: 105, category: 'Comidas', emoji: '🍝' },
+
   // Postres
-  { id: 8, name: 'Tiramisú', price: 5.50, category: 'Postres', emoji: '🍰' },
-  { id: 9, name: 'Cheesecake', price: 6.00, category: 'Postres', emoji: '🎂' },
-  { id: 10, name: 'Helado de Vainilla', price: 4.00, category: 'Postres', emoji: '🍨' }
+  { id: 8, name: 'Tiramisú', price: 80, category: 'Postres', emoji: '🍰' },
+  { id: 9, name: 'Cheesecake', price: 60, category: 'Postres', emoji: '🎂' },
+  { id: 10, name: 'Helado de Vainilla', price: 40, category: 'Postres', emoji: '🍨' }
 ];
 
 // Array de órdenes en memoria
